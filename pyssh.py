@@ -29,7 +29,7 @@ class RunCommand(cmd.Cmd):
         
         # Setting up the credential
         self.uid = os.getlogin()
-        #self.password = ""
+        self.password = ""
         while not self.password:
             self.password = getpass.getpass()
 
