@@ -1,1 +1,1 @@
-hello paramiko
+ssh-paramiko-client
