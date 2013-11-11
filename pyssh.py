@@ -29,12 +29,13 @@ class RunCommand(cmd.Cmd):
         
         # Setting up the credential
         self.uid = os.getlogin()
+	print "Connecting via [%s]" % self.uid
         self.password = ""
         while not self.password:
             self.password = getpass.getpass()
 
         # Setting logging file
-        timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H:%M:%S')
         self.logname = os.getcwd() + "/ssh-paramiko-" + timestamp + ".log"
         self.logfile = open(self.logname, 'a')
         self.logfile.write("Time: %s\n" % timestamp)
@@ -88,20 +89,21 @@ class RunCommand(cmd.Cmd):
         if len(self.hosts) == 0:
             print "No host is added"
         else:
-            print "Total added hosts: %s" % len(self.hosts)
             for item_host in self.hosts:
                 print "host: %s " % item_host
+            print "Total added hosts: %s" % len(self.hosts)
 
     def do_addhostfile(self, args):
         """ Add a file that connect the host list """
         hostfile = args.strip()
         if os.path.isfile(hostfile):
             try:
-                with open(hostfile, "r") as file:
-                    for line in file.readlines():
-                        self.hosts.append(line.strip())
-                    file.close()
-            except IOError as e:
+                file = open(hostfile, "r")
+                for line in file.readlines():
+                     if line.strip() not in self.hosts:
+                         self.hosts.append(line.strip())
+                file.close()
+            except IOError, e:
                 print "Unable to open file", e
         else:
             print "file is not found, %s" % hostfile
@@ -115,12 +117,15 @@ class RunCommand(cmd.Cmd):
                 ping_command = ["ping", "-c", "1", ping_item]
                 p = subprocess.Popen(ping_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 result = p.communicate()
-                reply="100% packet loss"
-                match = re.compile(reply)
-                if match.search(result[0]):
-                    print "host %s PING FAILED" % (ping_item)
-                else:
+		replyok="0% packet loss"
+		match = re.compile(replyok)
+		if match.search(result[0]):
                     print "host %s PING OK" % (ping_item)
+		else:
+		    print "host %s PING FAILED" % (ping_item)
+		    self.do_rmhost(ping_item)
+		
+	    print "Total pingable hosts: %s" % (len(self.hosts))
 
     def do_connect(self, args):
         """ Connect to all hosts in the host list """
@@ -132,11 +137,14 @@ class RunCommand(cmd.Cmd):
                 self.connections.append(client)
                 print "Connected host: %s" % host
             except socket.error, e:
-                print "Socket connection failed on %s" % host, e
+                print "Failed on %s: socket connection failed" % host, e
+		self.do_rmhost(host)
             except paramiko.SSHException, e:
-                print "Password is invalid:", e
+                print "Failed on %s: password is invalid" % host, e
+		self.do_rmhost(host)
             except paramiko.AuthenticationException, e:
-                print "Authentication failed for some reason:", e
+                print "Authentication failed for some reason on %s:" % host, e
+		self.do_rmhost(host)
         print "Total connected hosts: %s out of %s" % ( len(self.connections), len(self.hosts) )
 
     def do_run(self, command):
