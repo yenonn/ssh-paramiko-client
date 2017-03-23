@@ -1,4 +1,5 @@
-#!bin/python
+#!/usr/bin/python
+# Author: Hiu, Yen-Onn | Email: yenonn@gmail.com
 #
 #!!!!!!!!!!!BE CAREFUL WHEN YOU ARE USING THIS!!!!!!!!!!!!!!!!!
 # ssh implementation to allow multiple ssh connections at one time. It allows you
@@ -9,8 +10,9 @@
 # WARNING!
 #
 # Last modification:
-# Wed 22 Mar 2017 - add get pty to support sudo
-# Thu 23 Mar 2017 - su doest not run properly.. adding quote
+# Oct 29 2013 - First creation | Created by: Hiu, Yen-Onn
+# Wed 22 Mar 2017 - add get pty to support sudo | Modified by: Farhan Taib
+# Thu 23 Mar 2017 - su doest not run properly.. adding quote | Modified by: Farhan Taib
 #
 import paramiko
 import cmd
@@ -28,7 +30,7 @@ class RunCommand(cmd.Cmd):
     """ Simple shell to run command on the host """
 
     prompt = 'ssh > '
-    intro = "-- Welcome to pyssh v2, be careful of your commands --"
+    intro = "-- Welcome to ssh paramiko v2, be careful of your commands --"
 #-----------------------------------------------------------------------------------#
     def __init__(self):
         cmd.Cmd.__init__(self)
