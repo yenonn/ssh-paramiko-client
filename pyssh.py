@@ -1,9 +1,11 @@
-#!/usr/bin/python
-# Author: Hiu, Yen-Onn | Email: yenonn@gmail.com
+#!/bin/python
+#
+# Original Author: Hiu, Yen-Onn | Email: yenonn@gmail.com
+# Modified version: Farhan Taib | Email: mohdfarhantaib@gmail.com
 #
 #!!!!!!!!!!!BE CAREFUL WHEN YOU ARE USING THIS!!!!!!!!!!!!!!!!!
 # ssh implementation to allow multiple ssh connections at one time. It allows you
-# to prompt commands at one time recursively to all of the connected ssh clients. 
+# to prompt commands at one time recursively to all of the connected ssh clients.
 # So, it means that you have to be *very* aware of the commands that you put in.
 # otherwise, it will be a disasterous impact.
 #!!!!!!!!!!!BE CAREFUL WHEN YOU ARE USING THIS!!!!!!!!!!!!!!!!!
@@ -13,6 +15,9 @@
 # Oct 29 2013 - First creation | Created by: Hiu, Yen-Onn
 # Wed 22 Mar 2017 - add get pty to support sudo | Modified by: Farhan Taib
 # Thu 23 Mar 2017 - su doest not run properly.. adding quote | Modified by: Farhan Taib
+# Wed 29 Mar 2017 - add clear option, CTRL-C return new line, CTRL-D exit program,
+#                   addhostfile ignore commented lines
+#                   & add reinsert password option. | Modified by: Farhan Taib
 #
 import paramiko
 import cmd
@@ -25,13 +30,14 @@ import getpass
 import datetime
 import time
 
+#-----------------------------------------------------------------------------------#
 class RunCommand(cmd.Cmd):
 
     """ Simple shell to run command on the host """
 
     prompt = 'ssh > '
-    intro = "-- Welcome to ssh paramiko v2, be careful of your commands --"
-#-----------------------------------------------------------------------------------#
+    intro=False
+    print "-- Welcome to pyssh update:2, be careful of your commands --"
     def __init__(self):
         cmd.Cmd.__init__(self)
         self.hosts = []
@@ -53,6 +59,16 @@ class RunCommand(cmd.Cmd):
             self.logfile.write("Time: %s\n" % timestamp)
             self.logfile.close()
         #-----------------------------------------------------------------------------------#
+        doQuit = False
+        while doQuit != True:
+            try:
+                self.cmdloop()
+                doQuit = True
+            except KeyboardInterrupt:
+                sys.stdout.write('\n')
+            except EOFError, e:
+                print "Caught CRTL-D, script is terminated.", e
+            #-----------------------------------------------------------------------------------#
     def do_help(self, args):
         print "Usage - pyssh.py"
         print "======================================================================"
@@ -68,13 +84,20 @@ class RunCommand(cmd.Cmd):
         print " runsudo      - run a specific command in sudo mode"
         print " put          - put a file onto the connected host"
         print "----------------------------------------------------------------------"
+        print " clear	     - clear screen"
+        print " password     - re-insert password"
         print " close        - close the ssh connect to the added host list"
         print " quit         - quit the session"
         print " exit         - exit the session"
         print "======================================================================"
         #-----------------------------------------------------------------------------------#
+
+    def do_clear(self, args=False):
+        subprocess.call("clear", shell=True)
     def emptyline(self):
         pass
+    def do_password(self, args=False):
+        self.password = getpass.getpass()
         #-----------------------------------------------------------------------------------#
     def do_addhost(self, args):
         """ Add the host to the host list """
@@ -113,7 +136,9 @@ class RunCommand(cmd.Cmd):
                 file = open(hostfile, "r")
                 for line in file.readlines():
                     if line.strip() not in self.hosts and len(line.strip()) > 0:
-                        self.hosts.append(line.strip())
+                        li = line.strip()
+                        if not li.startswith("#"):
+                            self.hosts.append(line.strip())
                 file.close()
             except IOError, e:
                 print "Unable to open file", e
@@ -148,7 +173,6 @@ class RunCommand(cmd.Cmd):
             self.do_rmhost(remove_item)
             print "Total pingable hosts: %s" % (total_pingable_host)
         #-----------------------------------------------------------------------------------#
-
     def do_put(self, args):
         """ Put a file onto the targeted host"""
         local_path = args.strip()
@@ -173,7 +197,8 @@ class RunCommand(cmd.Cmd):
                     sftp = paramiko.SFTPClient.from_transport(conn)
                     sftp.put(local_path, remote_path)
                     print "File is copied to %s@%s:~/%s" % (self.uid, host, remote_path)
-                    self.logfile.write("File is copied to %s@%s:~/%s" % (self.uid, host, remote_path))
+                    self.logfile.write("File is copied " \
+                    "to %s@%s:~/%s" % (self.uid, host, remote_path))
                 except Exception, err:
                     print "Error: %s" % (err)
                     self.logfile.close()
@@ -188,7 +213,7 @@ class RunCommand(cmd.Cmd):
         removehost = []
         self.logfile = open(self.logname, "a")
         self.logfile.write("Connecting to hosts.\n")
-	for host in self.hosts:
+        for host in self.hosts:
             try:
                 transport = paramiko.Transport((host, self.port))
                 transport.connect(username=self.uid, password=self.password)
@@ -215,57 +240,58 @@ class RunCommand(cmd.Cmd):
             self.logfile.write("Fail connection: %s\n" % remove_item)
 
             print "Total connected hosts: %s out of %s" % (total_connected_host, total_host)
-        self.logfile.write("Total connected hosts: %s out of %s\n" % (total_connected_host, total_host))
+        self.logfile.write("Total connected hosts" \
+        ": %s out of %s\n" % (total_connected_host, total_host))
         self.logfile.close()
         if total_connected_host >= 1:
             self.prompt = 'ssh mode:connected > '
         #-----------------------------------------------------------------------------------#
     def do_runsudo(self, args):
-	""" enable/disable sudo """
-	sudo_cmd = args.strip()
-	self.do_run(sudo_cmd,True)
+        """ enable/disable sudo """
+        sudo_cmd = args.strip()
+        self.do_run(sudo_cmd, True)
         #-----------------------------------------------------------------------------------#
-	# There are 2 ways of doing the sudo you can modify to suit your best 		    #
-	# Read sudo for infomation about using -S -p 					    #
+        # There is 2 ways of doing the sudo you can modify to suit your best 		        #
+        # Read sudo for infomation about using -S -p 					                    #
         #-----------------------------------------------------------------------------------#
-    def do_run(self, args,sudoenabled=False):
+    def do_run(self, args, sudoenabled=False):
         """ run/execute command on all the host in the list """
         command = args.strip()
-	if sudoenabled:
-           #fullcmd = "echo " + self.password + " | sudo -k -S -p '' su -c \'" + command + "\'"
-           fullcmd = "sudo -k su -c " + "\'" + command + "\'"
-	else:
-           fullcmd = command
+        if sudoenabled:
+            #fullcmd = "echo " + self.password + " | sudo -k -S -p '' su -c \'" + command + "\'"
+            fullcmd = "sudo -k su -c "+"\'"+ command + "\'"
+        else:
+            fullcmd = command
+
         if fullcmd and self.connections:
             self.logfile = open(self.logname, "a")
             self.logfile.write("Input: %s\n" % command)
             for host, conn in zip(self.hosts, self.connections):
                 print "host: %s" % host
                 self.logfile.write("host: %s\n" % host)
-		channel = conn.open_session()
-		if sudoenabled:
-		   channel.get_pty()
+                channel = conn.open_session()
+                if sudoenabled:
+                    channel.get_pty()
 
-		channel.exec_command(fullcmd)
-		if sudoenabled:
-		   stdin = channel.makefile('wb', -1)
+                channel.exec_command(fullcmd)
+
+                if sudoenabled:
+                    stdin = channel.makefile('wb', -1)
 
                 stdout = channel.makefile('rb', -1)
                 stderr = channel.makefile_stderr('rb', -1)
-		if sudoenabled:
-		   stdin.write(self.password +'\n')
-		   stdin.flush()
-                   for line in stdout.read().splitlines()[1:]:
-                       print "\t%s" % (line)
-                       self.logfile.write("\t" + line + "\n")
-		else:
-		    for line in stdout.read().splitlines():
-                        print "\t%s" % (line)
-                        self.logfile.write("\t" + line + "\n")
 
-		#for line in stdout.read().splitlines():
-                    #print "\t%s" % (line)
-                    #self.logfile.write("\t" + line + "\n")
+                if sudoenabled:
+                    time.sleep(0.001)
+                    stdin.write(self.password +'\n')
+                    stdin.flush()
+                    stdout2 = stdout.read().splitlines()[1:]
+                else:
+                    stdout2 = stdout.read().splitlines()
+
+                for line in stdout2:
+                    print "\t%s" % (line)
+                    self.logfile.write("\t" + line + "\n")
 
                 for line in stderr.read().splitlines():
                     print "[Error]: \t%s" % (line)
@@ -295,4 +321,5 @@ if __name__ == '__main__':
     try:
         RunCommand().cmdloop()
     except KeyboardInterrupt, e:
-        print "Caught CRTL-C, script is terminated.", e
+        print "\tCaught CRTL-C, script is terminated.", e
+
