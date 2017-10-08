@@ -15,7 +15,6 @@ import cmd
 import sys
 import subprocess
 import socket
-import re
 import os
 import getpass
 import datetime
@@ -48,23 +47,23 @@ class RunCommand(cmd.Cmd):
     self.logfile.close()
   
   def do_help(self, args):
-    print ("Usage - pyssh.py")
-    print ("======================================================================")
-    print (" addhost      - add host with the comma delimitter")
-    print (" addhostfile  - add host with a absolute path of a file")
-    print (" rmhost       - remove host with the comma delimitter")
-    print (" lshost       - list hosts")
-    print ("----------------------------------------------------------------------")
-    print (" ping         - do a ping test to the added host list")
-    print ("----------------------------------------------------------------------")
-    print (" connect      - establish ssh connection to the added host list")
-    print (" run          - run a specific command on the connected host")
-    print (" put          - put a file onto the connected host")
-    print (" get          - get a file from connected hosts")
-    print ("----------------------------------------------------------------------")
-    print (" close        - close the ssh connect to the added host list")
-    print (" exit         - exit the session")
-    print ("=====================================================================")
+    print("Usage - pyssh.py")
+    print("======================================================================")
+    print(" addhost      - add host with the comma delimitter")
+    print(" addhostfile  - add host with a absolute path of a file")
+    print(" rmhost       - remove host with the comma delimitter")
+    print(" lshost       - list hosts")
+    print("----------------------------------------------------------------------")
+    print(" ping         - do a ping test to the added host list")
+    print("----------------------------------------------------------------------")
+    print(" connect      - establish ssh connection to the added host list")
+    print(" run          - run a specific command on the connected host")
+    print(" put          - put a file onto the connected host")
+    print(" get          - get a file from connected hosts")
+    print("----------------------------------------------------------------------")
+    print(" close        - close the ssh connect to the added host list")
+    print(" exit         - exit the session")
+    print("=====================================================================")
 
   def emptyline(self):
     pass
@@ -92,7 +91,7 @@ class RunCommand(cmd.Cmd):
   def do_lshost(self, args):
     """ List out the host in the host list """
     if len(self.hosts) == 0:
-      print ("No hosts(s) is added")
+      print("No hosts(s) is added")
     else:
       for item_host in self.hosts:
         print("host: {}".format(item_host))
@@ -134,16 +133,16 @@ class RunCommand(cmd.Cmd):
       # removing all the unpingable hosts
       for remove_item in removehost:
         self.do_rmhost(remove_item)
-    print ("* Total pingable hosts: {}".format(total_pingable_host))
+    print("* Total pingable hosts: {}".format(total_pingable_host))
 
     def do_put(self, args):
       """ Put a file onto the targeted host"""
       local_path = args.strip()
       if not os.access(local_path, os.R_OK):
-        print ("Read permission is denied on file, {}".format(local_path))
+        print("Read permission is denied on file, {}".format(local_path))
         return
       if not os.path.isfile(local_path):
-        print ("File is not found: {}".format(local_path))
+        print("File is not found: {}".format(local_path))
         return
 
       remote_path = None
@@ -154,17 +153,17 @@ class RunCommand(cmd.Cmd):
         self.logfile = open(self.logname, "a")
         for host, conn in zip(self.hosts, self.connections):
           try:
-            print ("host: {}").format(host)
+            print("host: {}").format(host)
             self.logfile.write("host: {}\n".format(host))
             sftp = paramiko.SFTPClient.from_transport(conn)
             sftp.put(local_path, remote_path)
-            print ("File is copied to {}@{}:~/{}".format(self.uid, host, remote_path))
+            print("File is copied to {}@{}:~/{}".format(self.uid, host, remote_path))
             self.logfile.write("File is copied to {}@{}:~/{}".format(self.uid, host, remote_path))
           except Exception as err:
-            print ("Error: {}".format(err))
+            print("Error: {}".format(err))
             self.logfile.close()
           else:
-            print ("No connection is made")
+            print("No connection is made")
 
     def do_get (self, args):
       """ Get a file from the targeted host"""
@@ -175,11 +174,11 @@ class RunCommand(cmd.Cmd):
         self.logfile = open(self.logname, "a")
         for host, conn in zip(self.hosts, self.connections):
           try:
-            print ("host: {}").format(host)
+            print("host: {}").format(host)
             sftp = paramiko.SFTPClient.from_transport(conn)
             local_file = local_path + remote_file_name + "." + host + ".out"
             sftp.get(remote_path, local_file)
-            print ("file: {} is copied to local FS: {}".format(remote_path, local_file))
+            print("file: {} is copied to local FS: {}".format(remote_path, local_file))
             os.chmod(local_file, 644)
           except Exception as err:
             print("Error: {}".format(err))
@@ -251,21 +250,21 @@ class RunCommand(cmd.Cmd):
       self.logfile = open(self.logname, "a")
       self.logfile.write("Input: {}\n".format(command))
       for host, conn in zip(self.hosts, self.connections):
-        print ("host: {}".format(host))
+        print("host: {}".format(host))
         self.logfile.write("host: {}\n".format(host))
         channel = conn.open_session()
         channel.exec_command(command)
         stdout = channel.makefile('rb', -1)
         stderr = channel.makefile_stderr('rb', -1)
         for line in stdout.read().splitlines():
-          print ("\t{}".format(line))
+          print("\t{}".format(line))
           self.logfile.write("\t" + line + "\n")
         for line in stderr.read().splitlines():
-          print ("[Error]: \t{}".format(line))
+          print("[Error]: \t{}".format(line))
           self.logfile.write("[Error]:\t" + line + "\n")
         self.logfile.close()
     else:
-      print ("No connection is made")
+      print("No connection is made")
 
   # def do_run(self, command):
   #   """ run/execute command on all the host in the list """
@@ -308,4 +307,4 @@ if __name__ == '__main__':
   try:
     RunCommand().cmdloop()
   except KeyboardInterrupt as e:
-    print ("Caught CRTL-C, script is terminated. {}".format(e))
+    print("Caught CRTL-C, script is terminated. {}".format(e))
