@@ -98,7 +98,7 @@ class RunCommand(cmd.Cmd):
     else:
       for item_host in self.hosts:
         print("host: {}".format(item_host))
-      print("Total added hosts: {}".format(self.hosts))
+      print("* Total added hosts: {}".format(self.hosts))
 
   def do_addhostfile(self, args):
     """ Add a file that connect the host list """
@@ -107,13 +107,14 @@ class RunCommand(cmd.Cmd):
       try:
         file = open(hostfile, "r")
         for line in file.readlines():
-          if line.strip() not in self.hosts and len(line.strip()) > 0 and "#" not in line.strip():
-            self.hosts.append(line.strip())
+          line = line.strip()
+          if line not in self.hosts and len(line) and "#" not in line:
+            self.hosts.append(line)
         file.close()
-      except IOError as e:
-        print("Unable to open file {}".format(e))
+      except IOError as io_error:
+        print("Unable to open file {}".format(io_error))
     else:
-      print ("file is not found, {}".format(hostfile))
+      print("file is not found, {}".format(hostfile))
 
   def do_ping(self, args):
     """ Ping the hosts in the host list """
@@ -122,22 +123,19 @@ class RunCommand(cmd.Cmd):
     else:
       removehost = []
       for ping_item in self.hosts:
-        ping_command = ["ping", "-c", "2", ping_item]
-        p = subprocess.Popen(ping_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        result = p.communicate()
-        replyok="0% packet loss"
-        match = re.compile(replyok)
-        if match.search(result[0]):
-          print("host: %s - PING OK".format(ping_item))
+        ping_command = "ping -c 2 {}".format(ping_item)
+        result = subprocess.getoutput(ping_command)
+        if "2 packets received" in result:
+          print("host: {} - PING OK".format(ping_item))
         else:
-          print ("host: %s - PING FAILED".format(ping_item))
+          print("host: {} - PING FAILED".format(ping_item))
           removehost.append(ping_item)
       # calculate pingable hosts
       total_pingable_host = len(self.hosts) - len(removehost)
       # removing all the unpingable hosts
       for remove_item in removehost:
         self.do_rmhost(remove_item)
-    print ("Total pingable hosts: %s".format(total_pingable_host))
+    print ("* Total pingable hosts: {}".format(total_pingable_host))
 
     def do_put(self, args):
       """ Put a file onto the targeted host"""
@@ -221,7 +219,7 @@ class RunCommand(cmd.Cmd):
       for remove_item in removehost:
         self.do_rmhost(remove_item)
         self.logfile.write("Fail connection: %s\n" % remove_item)
-      print("Total connected hosts: {} out of {}".format(total_connected_host, total_host))
+      print("* Total connected hosts: {} out of {}".format(total_connected_host, total_host))
       self.logfile.write("Total connected hosts: %s out of %s\n" % (total_connected_host, total_host))
       self.logfile.close()
       if total_connected_host >= 1:
