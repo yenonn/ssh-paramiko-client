@@ -118,6 +118,7 @@ class RunCommand(cmd.Cmd):
     """ Ping the hosts in the host list """
     if len(self.hosts) == 0:
       print("No host(s) is added")
+      return
     else:
       removehost = []
       for ping_item in self.hosts:
