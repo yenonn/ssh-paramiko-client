@@ -269,7 +269,7 @@ class RunCommand(cmd.Cmd):
 
   def do_runsudo(self, args):
     command = args.strip()
-    self.do_run(command, True)
+    self.do_run(command)
     
   # def do_run(self, command):
   #   """ run/execute command on all the host in the list """
