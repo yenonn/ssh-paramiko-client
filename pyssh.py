@@ -58,7 +58,7 @@ class RunCommand(cmd.Cmd):
     print("----------------------------------------------------------------------")
     print(" connect      - establish ssh connection to the added host list")
     print(" run          - run a specific command on the connected host")
-    print(" runsudo      - run a specific command on the connected host with privileges account")
+    print(" sudorun      - run a specific command on the connected host with privileges account")
     print(" put          - put a file onto the connected host")
     print(" get          - get a file from connected hosts")
     print("----------------------------------------------------------------------")
@@ -267,7 +267,7 @@ class RunCommand(cmd.Cmd):
     else:
       print("No connection is made")
 
-  def do_runsudo(self, args):
+  def do_sudorun(self, args):
     command = args.strip()
     self.do_run(command)
     
