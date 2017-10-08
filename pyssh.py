@@ -36,13 +36,11 @@ class RunCommand(cmd.Cmd):
     self.uid = ""
     while not self.uid:
       self.uid = input("login as: ").strip()
-    if self.uid == "pftcass":
-      self.password = ""
     else:
       self.password = ""
       while not self.password:
         self.password = getpass.getpass()
-        # Setting logging file
+    # Setting logging file
     timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H:%M:%S')
     self.logname = os.getcwd() + "/ssh-paramiko-" + timestamp + ".log"
     self.logfile = open(self.logname, 'a')
@@ -156,11 +154,11 @@ class RunCommand(cmd.Cmd):
         for host, conn in zip(self.hosts, self.connections):
           try:
             print ("host: {}").format(host)
-            self.logfile.write("host: %s\n" % host)
+            self.logfile.write("host: {}\n".format(host))
             sftp = paramiko.SFTPClient.from_transport(conn)
             sftp.put(local_path, remote_path)
             print ("File is copied to {}@{}:~/{}".format(self.uid, host, remote_path))
-            self.logfile.write("File is copied to %s@%s:~/%s" % (self.uid, host, remote_path))
+            self.logfile.write("File is copied to {}@{}:~/{}".format(self.uid, host, remote_path))
           except Exception as err:
             print ("Error: {}".format(err))
             self.logfile.close()
@@ -176,7 +174,7 @@ class RunCommand(cmd.Cmd):
         self.logfile = open(self.logname, "a")
         for host, conn in zip(self.hosts, self.connections):
           try:
-            print ("host: %s").format(host)
+            print ("host: {}").format(host)
             sftp = paramiko.SFTPClient.from_transport(conn)
             local_file = local_path + remote_file_name + "." + host + ".out"
             sftp.get(remote_path, local_file)
@@ -201,16 +199,16 @@ class RunCommand(cmd.Cmd):
           transport = paramiko.Transport((host, self.port))
           transport.connect(username = self.uid, password = self.password)
           self.connections.append(transport)
-          print("Connected host: %s".format(host))
-          self.logfile.write("Connected host: %s\n" % host)
+          print("Connected host: {}".format(host))
+          self.logfile.write("Connected host: {}\n".format(host))
         except socket.error as e:
           print("Failed on {}: socket connection failed - {}".format(host, e))
           removehost.append(host)
         except paramiko.SSHException as e:
-          print("Failed on %s: password is invalid".format(host, e))
+          print("Failed on {}: password is invalid".format(host, e))
           removehost.append(host)
         except paramiko.AuthenticationException as e:
-          print("Authentication failed for some reason on %s :".format(host, e))
+          print("Authentication failed for some reason on {} :".format(host, e))
           removehost.append(host)
           #calculating the connected hosts
           total_host = len(self.hosts)
@@ -218,9 +216,9 @@ class RunCommand(cmd.Cmd):
           #remove the failed hosts
       for remove_item in removehost:
         self.do_rmhost(remove_item)
-        self.logfile.write("Fail connection: %s\n" % remove_item)
+        self.logfile.write("Fail connection: {}\n".format(remove_item))
       print("* Total connected hosts: {} out of {}".format(total_connected_host, total_host))
-      self.logfile.write("Total connected hosts: %s out of %s\n" % (total_connected_host, total_host))
+      self.logfile.write("Total connected hosts: {} out of {}\n".format(total_connected_host, total_host))
       self.logfile.close()
       if total_connected_host >= 1:
         self.prompt = 'ssh mode:connected > '
@@ -250,10 +248,10 @@ class RunCommand(cmd.Cmd):
     command = args.strip()
     if command and self.connections:
       self.logfile = open(self.logname, "a")
-      self.logfile.write("Input: %s\n" % command)
+      self.logfile.write("Input: {}\n".format(command))
       for host, conn in zip(self.hosts, self.connections):
         print ("host: {}".format(host))
-        self.logfile.write("host: %s\n" % host)
+        self.logfile.write("host: {}\n".format(host))
         channel = conn.open_session()
         channel.exec_command(command)
         stdout = channel.makefile('rb', -1)
