@@ -63,7 +63,6 @@ class RunCommand(cmd.Cmd):
 
     def do_addhost(self, args):
         """ Add the host to the host list """
-
         add_item_hosts = args.split(",")
         for h in add_item_hosts:
             add_item = h.strip()
@@ -75,7 +74,6 @@ class RunCommand(cmd.Cmd):
 
     def do_rmhost(self, args):
         """ Remove the host to the host list """
-
         remove_item_hosts = args.split(",")
         for h in remove_item_hosts:
             remove_item = h.strip()
@@ -87,7 +85,6 @@ class RunCommand(cmd.Cmd):
 
     def do_lshost(self, args):
         """ List out the host in the host list """
-
         if len(self.hosts) == 0:
             print "No host is added"
         else:
