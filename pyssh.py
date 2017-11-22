@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # Hiu, Yen-Onn
 # yenonn@gmail.com
-# ssh implementation for multiple ssh client to be connected and 
+# ssh implementation for multiple ssh client to be connected and
 # issue the same commands at the same time.
 # Oct 29 2013
 import paramiko
@@ -15,6 +15,7 @@ import getpass
 import datetime
 import time
 
+
 class RunCommand(cmd.Cmd):
 
     """ Simple shell to run command on the host """
@@ -26,16 +27,17 @@ class RunCommand(cmd.Cmd):
         cmd.Cmd.__init__(self)
         self.hosts = []
         self.connections = []
-        
+
         # Setting up the credential
         self.uid = os.getlogin()
-	print "Connecting via [%s]" % self.uid
+        print "Connecting via [%s]" % self.uid
         self.password = ""
         while not self.password:
             self.password = getpass.getpass()
 
         # Setting logging file
-        timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H:%M:%S')
+        timestamp = datetime.datetime.fromtimestamp(
+            time.time()).strftime('%Y-%m-%d-%H:%M:%S')
         self.logname = os.getcwd() + "/ssh-paramiko-" + timestamp + ".log"
         self.logfile = open(self.logname, 'a')
         self.logfile.write("Time: %s\n" % timestamp)
@@ -55,9 +57,9 @@ class RunCommand(cmd.Cmd):
 
     def emptyline(self):
         pass
-        #print "HELP"
-        #self.do_help(self)
-        #return cmd.Cmd.emptyline(self)
+        # print "HELP"
+        # self.do_help(self)
+        # return cmd.Cmd.emptyline(self)
 
     def do_addhost(self, args):
         """ Add the host to the host list """
@@ -70,10 +72,10 @@ class RunCommand(cmd.Cmd):
             else:
                 print "host is skipped: %s" % add_item
         print "host added: %s" % self.hosts
-    
+
     def do_rmhost(self, args):
         """ Remove the host to the host list """
-        
+
         remove_item_hosts = args.split(",")
         for h in remove_item_hosts:
             remove_item = h.strip()
@@ -85,7 +87,7 @@ class RunCommand(cmd.Cmd):
 
     def do_lshost(self, args):
         """ List out the host in the host list """
-        
+
         if len(self.hosts) == 0:
             print "No host is added"
         else:
@@ -100,10 +102,10 @@ class RunCommand(cmd.Cmd):
             try:
                 file = open(hostfile, "r")
                 for line in file.readlines():
-                     if line.strip() not in self.hosts:
-                         self.hosts.append(line.strip())
+                    if line.strip() not in self.hosts:
+                        self.hosts.append(line.strip())
                 file.close()
-            except IOError, e:
+            except IOError as e:
                 print "Unable to open file", e
         else:
             print "file is not found, %s" % hostfile
@@ -115,37 +117,40 @@ class RunCommand(cmd.Cmd):
         else:
             for ping_item in self.hosts:
                 ping_command = ["ping", "-c", "1", ping_item]
-                p = subprocess.Popen(ping_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                p = subprocess.Popen(
+                    ping_command,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE)
                 result = p.communicate()
-		replyok="0% packet loss"
-		match = re.compile(replyok)
-		if match.search(result[0]):
+                replyok = "0% packet loss"
+                match = re.compile(replyok)
+                if match.search(result[0]):
                     print "host %s PING OK" % (ping_item)
-		else:
-		    print "host %s PING FAILED" % (ping_item)
-		    self.do_rmhost(ping_item)
-		
-	    print "Total pingable hosts: %s" % (len(self.hosts))
+                else:
+                    print "host %s PING FAILED" % (ping_item)
+                    self.do_rmhost(ping_item)
+
+            print "Total pingable hosts: %s" % (len(self.hosts))
 
     def do_connect(self, args):
         """ Connect to all hosts in the host list """
         for host in self.hosts:
             try:
                 client = paramiko.SSHClient()
-                client.set_missing_host_key_policy( paramiko.AutoAddPolicy())
-                client.connect( host, username=self.uid , password=self.password)
+                client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                client.connect(host, username=self.uid, password=self.password)
                 self.connections.append(client)
                 print "Connected host: %s" % host
-            except socket.error, e:
+            except socket.error as e:
                 print "Failed on %s: socket connection failed" % host, e
-		self.do_rmhost(host)
-            except paramiko.SSHException, e:
+                self.do_rmhost(host)
+            except paramiko.SSHException as e:
                 print "Failed on %s: password is invalid" % host, e
-		self.do_rmhost(host)
-            except paramiko.AuthenticationException, e:
+                self.do_rmhost(host)
+            except paramiko.AuthenticationException as e:
                 print "Authentication failed for some reason on %s:" % host, e
-		self.do_rmhost(host)
-        print "Total connected hosts: %s out of %s" % ( len(self.connections), len(self.hosts) )
+                self.do_rmhost(host)
+        print "Total connected hosts: %s out of %s" % (len(self.connections), len(self.hosts))
 
     def do_run(self, command):
         """ run/execute command on all the host in the list """
@@ -154,15 +159,15 @@ class RunCommand(cmd.Cmd):
             self.logfile.write("Input: %s\n" % command)
             for host, conn in zip(self.hosts, self.connections):
                 print "host: %s" % host
-                self.logfile.write("host: %s\n" % host)  
-                
+                self.logfile.write("host: %s\n" % host)
+
                 stdin, stdout, stderr = conn.exec_command(command)
                 stdin.close()
-                
+
                 for line in stdout.read().splitlines():
                     print "\t%s" % (line)
                     self.logfile.write("\t" + line + "\n")
-                
+
                 for line in stderr.read().splitlines():
                     print "[Error]: %s" % (line)
                     self.logfile.write("[Error]:\t" + line + "\n")
@@ -172,7 +177,7 @@ class RunCommand(cmd.Cmd):
 
     def do_close(self, args):
         for conn in self.connections:
-           conn.close()
+            conn.close()
         self.connections = []
 
     def do_EOF(self, args):
@@ -183,5 +188,6 @@ class RunCommand(cmd.Cmd):
         self.hosts = []
         sys.exit(0)
 
-if __name__ == '__main__':                                                     
+
+if __name__ == '__main__':
     RunCommand().cmdloop()
