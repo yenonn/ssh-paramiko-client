@@ -29,7 +29,10 @@ class RunCommand(cmd.Cmd):
         self.connections = []
 
         # Setting up the credential
-        self.uid = os.getlogin()
+        #self.uid = os.getlogin()
+        self.uid = ""
+        while not self.uid:
+            self.uid = raw_input("User: ")
         print "Connecting via [%s]" % self.uid
         self.password = ""
         while not self.password:
@@ -99,7 +102,7 @@ class RunCommand(cmd.Cmd):
             try:
                 file = open(hostfile, "r")
                 for line in file.readlines():
-                    if line.strip() not in self.hosts:
+                    if line.strip() not in self.hosts and not line.startswith("#"):
                         self.hosts.append(line.strip())
                 file.close()
             except IOError as e:
