@@ -246,7 +246,7 @@ class RunCommand(cmd.Cmd):
 
   def do_sudorun(self, args):
     command = args.strip()
-    self.do_run(command)
+    self.do_run(f"sudo {command}")
 
   def do_close(self, args):
     for conn in self.connections:
