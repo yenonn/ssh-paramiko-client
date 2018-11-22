@@ -21,6 +21,24 @@ import datetime
 import time
 
 
+class PrintLog():
+  def __init__(self):
+    timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H:%M:%S')
+    self.logname = os.getcwd() + "/ssh-paramiko-" + timestamp + ".log"
+    with open(self.logname, 'a') as file:
+      file.write(f"Time: {timestamp}\n")
+
+  def print(self, message):
+    print(f"{message}")
+    with open(self.logname, 'a') as file:
+      file.write(f"{message}\n")
+
+  def warn(self, message):
+    print(f"WARN: {message}")
+    with open(self.logname, 'a') as file:
+      file.write(f"WARN: {message}\n")
+
+
 class RunCommand(cmd.Cmd):
   """ Simple shell to run command on the host """
   prompt = "ssh > "
@@ -38,11 +56,7 @@ class RunCommand(cmd.Cmd):
       self.password = ""
       while not self.password:
         self.password = getpass.getpass()
-    timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H:%M:%S')
-    self.logname = os.getcwd() + "/ssh-paramiko-" + timestamp + ".log"
-    self.logfile = open(self.logname, 'a')
-    self.logfile.write("Time: %s\n" % timestamp)
-    self.logfile.close()
+    self.log = PrintLog()
 
   def do_help(self, args):
     print("Usage - pyssh.py")
@@ -147,18 +161,14 @@ class RunCommand(cmd.Cmd):
     if not remote_path:
       remote_path = os.path.split(local_path)[1]
     if self.connections:
-      self.logfile = open(self.logname, "a")
       for host, conn in zip(self.hosts, self.connections):
         try:
-          print(f"host: {host}")
-          self.logfile.write(f"host: {host}\n")
+          self.log.print(f"host: {host}")
           sftp = paramiko.SFTPClient.from_transport(conn)
           sftp.put(local_path, remote_path)
-          print(f"File is copied to {self.uid}@{host}:~/{remote_path}")
-          self.logfile.write(f"File is copied to {self.uid}@{host}:~/{remote_path}")
+          self.log.print(f"File is copied to {self.uid}@{host}:~/{remote_path}")
         except Exception as err:
           print(f"Error: {err}")
-          self.logfile.close()
     else:
       print("No connection is made")
 
@@ -168,18 +178,16 @@ class RunCommand(cmd.Cmd):
     remote_file_name = remote_path.split("/")[-1]
     local_path = "/tmp/"
     if self.connections:
-      self.logfile = open(self.logname, "a")
       for host, conn in zip(self.hosts, self.connections):
         try:
           print(f"host: {host}")
           sftp = paramiko.SFTPClient.from_transport(conn)
           local_file = local_path + remote_file_name + "." + host + ".out"
           sftp.get(remote_path, local_file)
-          print(f"file: {remote_path} is copied to local FS: {local_file}")
+          self.log.print(f"file: {remote_path} is copied to local FS: {local_file}")
           os.chmod(local_file, 644)
         except Exception as err:
           print(f"Error: {err}")
-          self.logfile.close()
     else:
       print("No connection is made")
 
@@ -189,15 +197,13 @@ class RunCommand(cmd.Cmd):
       print("No host(s) is not added.")
       return
     removehost = []
-    self.logfile = open(self.logname, "a")
-    self.logfile.write("Connecting to hosts.\n")
+    self.log.print("Connecting to hosts.")
     for host in self.hosts:
       try:
         transport = paramiko.Transport((host, self.port))
         transport.connect(username=self.uid, password=self.password)
         self.connections.append(transport)
-        print(f"Connected host: {host}")
-        self.logfile.write(f"Connected host: {host}\n")
+        self.log.print(f"Connected host: {host}")
       except socket.error as e:
         print(f"Failed on {host}: socket connection failed - {e}")
         removehost.append(host)
@@ -213,81 +219,34 @@ class RunCommand(cmd.Cmd):
       # remove the failed hosts
       for remove_item in removehost:
         self.do_rmhost(remove_item)
-        self.logfile.write(f"Fail connection: {remove_item}\n")
-    print(f"* Total connected hosts: {total_connected_host} out of {total_host}")
-    self.logfile.write(f"Total connected hosts: {total_connected_host} out of {total_host}\n")
-    self.logfile.close()
+        self.log.warn(f"Fail connection: {remove_item}")
+    self.log.print(f"* Total connected hosts: {total_connected_host} out of {total_host}")
     if total_connected_host >= 1:
       self.prompt = 'ssh mode:connected > '
-
-  # def do_connect(self, args):
-  #   """ Connect to all hosts in the host list """
-  #   for host in self.hosts:
-  #     try:
-  #       client = paramiko.SSHClient()
-  #       client.set_missing_host_key_policy( paramiko.AutoAddPolicy())
-  #       client.connect( host, username=self.uid , password=self.password)
-  #       self.connections.append(client)
-  #       print "Connected host: %s" % host
-  #     except socket.error, e:
-  #       print "Failed on %s: socket connection failed" % host, e
-  #       self.do_rmhost(host)
-  #     except paramiko.SSHException, e:
-  #       print "Failed on %s: password is invalid" % host, e
-  #       self.do_rmhost(host)
-  #     except paramiko.AuthenticationException, e:
-  #         print "Authentication failed for some reason on %s:" % host, e
-  #         self.do_rmhost(host)
-  #   print "Total connected hosts: %s out of %s" % ( len(self.connections), len(self.hosts) )
 
   def do_run(self, args):
     """ run/execute command on all the host in the list """
     command = args.strip()
     if command and self.connections:
-      self.logfile = open(self.logname, "a")
-      self.logfile.write(f"Input: {command}\n")
+      self.log.print(f"Input: {command}")
       for host, conn in zip(self.hosts, self.connections):
-        print(f"host: {host}")
-        self.logfile.write(f"host: {host}\n")
+        self.log.print(f"host: {host}")
         channel = conn.open_session()
         channel.exec_command(command)
         stdout = channel.makefile('rb', -1)
         stderr = channel.makefile_stderr('rb', -1)
         for byteline in stdout.read().splitlines():
           line = byteline.decode("utf-8")
-          print(f"\t{line}")
-          self.logfile.write("\t" + line + "\n")
+          self.log.print(f"\t{line}")
         for byteline in stderr.read().splitlines():
           line = byteline.decode()
-          print(f"[Error]: \t{line}")
-          self.logfile.write("[Error]:\t" + line + "\n")
-        self.logfile.close()
+          self.log.warn(f"[Error]: \t{line}")
     else:
       print("No connection is made")
 
   def do_sudorun(self, args):
     command = args.strip()
     self.do_run(command)
-
-  # def do_run(self, command):
-  #   """ run/execute command on all the host in the list """
-  #   if command:
-  #     self.logfile = open(self.logname, "a")
-  #     self.logfile.write("Input: %s\n" % command)
-  #     for host, conn in zip(self.hosts, self.connections):
-  #       print "host: %s" % host
-  #       self.logfile.write("host: %s\n" % host)
-  #       stdin, stdout, stderr = conn.exec_command(command)
-  #       stdin.close()
-  #     for line in stdout.read().splitlines():
-  #       print "\t%s" % (line)
-  #       self.logfile.write("\t" + line + "\n")
-  #     for line in stderr.read().splitlines():
-  #       print "[Error]: %s" % (line)
-  #       self.logfile.write("[Error]:\t" + line + "\n")
-  #     self.logfile.close()
-  #   else:
-  #     print "usage: run"
 
   def do_close(self, args):
     for conn in self.connections:
