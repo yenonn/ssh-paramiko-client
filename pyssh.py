@@ -89,17 +89,17 @@ class RunCommand(cmd.Cmd):
       if add_item and add_item not in self.hosts:
         self.hosts.append(add_item)
       else:
-        print(f"host is skipped: {add_time}")
-    print(f"host is added: {self.hosts}")
+        self.log.warn(f"host is skipped: {add_time}")
+    self.log.print(f"host is added: {self.hosts}")
 
   def do_rmhost(self, args):
     """ Remove the host to the host list """
     remove_host = args.strip()
     if remove_host and remove_host in self.hosts:
       self.hosts.remove(remove_host)
-      print(f"host is removed: {remove_host}")
+      self.log.warn(f"host is removed: {remove_host}")
     else:
-      print("host is not found.")
+      self.log.warn("host is not found.")
 
   def do_lshost(self, args):
     """ List out the host in the host list """
@@ -122,9 +122,9 @@ class RunCommand(cmd.Cmd):
             self.hosts.append(line)
         file.close()
       except IOError as io_error:
-        print(f"Unable to open file {io_error}")
+        self.log.warn(f"Unable to open file {io_error}")
     else:
-      print(f"file is not found, {hostfile}")
+      self.log.warn(f"file is not found, {hostfile}")
 
   def do_ping(self, args):
     """ Ping the hosts in the host list """
@@ -137,9 +137,9 @@ class RunCommand(cmd.Cmd):
         ping_command = f"ping -c 2 {ping_item}"
         result = subprocess.getoutput(ping_command)
         if "2 packets received" in result:
-          print(f"host: {ping_item} - PING OK")
+          self.log.print(f"host: {ping_item} - PING OK")
         else:
-          print(f"host: {ping_item} - PING FAILED")
+          self.log.warn(f"host: {ping_item} - PING FAILED")
           removehost.append(ping_item)
       # calculate pingable hosts
       total_pingable_host = len(self.hosts) - len(removehost)
@@ -152,10 +152,10 @@ class RunCommand(cmd.Cmd):
     """ Put a file onto the targeted host"""
     local_path = args.strip()
     if not os.access(local_path, os.R_OK):
-      print(f"Read permission is denied on file, {local_path}")
+      self.log.warn(f"Read permission is denied on file, {local_path}")
       return
     if not os.path.isfile(local_path):
-      print(f"File is not found: {local_path}")
+      self.log.warn(f"File is not found: {local_path}")
       return
     remote_path = None
     if not remote_path:
@@ -170,7 +170,7 @@ class RunCommand(cmd.Cmd):
         except Exception as err:
           print(f"Error: {err}")
     else:
-      print("No connection is made")
+      self.log.warn("No connection is made")
 
   def do_get(self, args):
     """ Get a file from the targeted host"""
@@ -189,12 +189,12 @@ class RunCommand(cmd.Cmd):
         except Exception as err:
           print(f"Error: {err}")
     else:
-      print("No connection is made")
+      self.log.warn("No connection is made")
 
   def do_connect(self, args):
     """ New implementation for connection for hosts """
     if len(self.hosts) == 0:
-      print("No host(s) is not added.")
+      self.log.warn("No host(s) is not added.")
       return
     removehost = []
     self.log.print("Connecting to hosts.")
@@ -205,13 +205,13 @@ class RunCommand(cmd.Cmd):
         self.connections.append(transport)
         self.log.print(f"Connected host: {host}")
       except socket.error as e:
-        print(f"Failed on {host}: socket connection failed - {e}")
+        self.log.warn(f"Failed on {host}: socket connection failed - {e}")
         removehost.append(host)
       except paramiko.SSHException as e:
-        print(f"Failed on {host}: password is invalid - {e}")
+        self.log.warn(f"Failed on {host}: password is invalid - {e}")
         removehost.append(host)
       except paramiko.AuthenticationException as e:
-        print(f"Authentication failed for some reason on {host} - {e}")
+        self.log.warn(f"Authentication failed for some reason on {host} - {e}")
         removehost.append(host)
         # calculating the connected hosts
       total_host = len(self.hosts)
@@ -222,7 +222,7 @@ class RunCommand(cmd.Cmd):
         self.log.warn(f"Fail connection: {remove_item}")
     self.log.print(f"* Total connected hosts: {total_connected_host} out of {total_host}")
     if total_connected_host >= 1:
-      self.prompt = 'ssh mode:connected > '
+      self.prompt = 'ssh mode: connected > '
 
   def do_run(self, args):
     """ run/execute command on all the host in the list """
@@ -239,10 +239,10 @@ class RunCommand(cmd.Cmd):
           line = byteline.decode("utf-8")
           self.log.print(f"\t{line}")
         for byteline in stderr.read().splitlines():
-          line = byteline.decode()
+          line = byteline.decode("utf-8")
           self.log.warn(f"[Error]: \t{line}")
     else:
-      print("No connection is made")
+      self.log.warn("No connection is made")
 
   def do_sudorun(self, args):
     command = args.strip()
