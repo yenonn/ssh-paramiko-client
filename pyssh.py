@@ -108,7 +108,7 @@ class RunCommand(cmd.Cmd):
     else:
       for item_host in self.hosts:
         print(f"host: {item_host}")
-      print(f"* Total added hosts: {self.hosts}")
+      print(f"* Total added hosts: {len(self.hosts)}")
 
   def do_addhostfile(self, args):
     """ Add a file that connect the host list """
