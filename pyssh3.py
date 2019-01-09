@@ -248,6 +248,10 @@ class RunCommand(cmd.Cmd):
     command = args.strip()
     self.do_run(f"sudo {command}")
 
+  def do_diagnose(self, args):
+    command = f"journalctl -k -S {datetime.datetime.today().strftime('%Y-%m-%d')}"
+    self.do_run(f"sudo {command}")
+
   def do_close(self, args):
     for conn in self.connections:
       conn.close()
