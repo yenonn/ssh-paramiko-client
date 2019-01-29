@@ -214,12 +214,12 @@ class RunCommand(cmd.Cmd):
         self.log.warn(f"Authentication failed for some reason on {host} - {e}")
         removehost.append(host)
         # calculating the connected hosts
-      total_host = len(self.hosts)
-      total_connected_host = len(self.hosts) - len(removehost)
-      # remove the failed hosts
-      for remove_item in removehost:
-        self.do_rmhost(remove_item)
-        self.log.warn(f"Fail connection: {remove_item}")
+    total_host = len(self.hosts)
+    total_connected_host = len(self.hosts) - len(removehost)
+    # remove the failed hosts
+    for remove_item in removehost:
+      self.do_rmhost(remove_item)
+      self.log.warn(f"Fail connection: {remove_item}")
     self.log.print(f"* Total connected hosts: {total_connected_host} out of {total_host}")
     if total_connected_host >= 1:
       self.prompt = 'ssh mode: connected > '
