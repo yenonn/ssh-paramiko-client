@@ -113,18 +113,16 @@ class RunCommand(cmd.Cmd):
   def do_addhostfile(self, args):
     """ Add a file that connect the host list """
     hostfile = args.strip()
-    if os.path.isfile(hostfile):
-      try:
-        file = open(hostfile, "r")
-        for line in file.readlines():
-          line = line.strip()
-          if line not in self.hosts and len(line) and "#" not in line:
-            self.hosts.append(line)
-        file.close()
-      except IOError as io_error:
-        self.log.warn(f"Unable to open file {io_error}")
-    else:
-      self.log.warn(f"file is not found, {hostfile}")
+    #EAFP (Easier to ask for forgiveness than permission)
+    try:
+      file = open(hostfile, "r")
+      for line in file.readlines():
+        line = line.strip()
+        if line not in self.hosts and len(line) and "#" not in line:
+          self.hosts.append(line)
+      file.close()
+    except IOError as io_error:
+      self.log.warn(f"Unable to open file {io_error}")
 
   def do_ping(self, args):
     """ Ping the hosts in the host list """
