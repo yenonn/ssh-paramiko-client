@@ -115,12 +115,11 @@ class RunCommand(cmd.Cmd):
     hostfile = args.strip()
     #EAFP (Easier to ask for forgiveness than permission)
     try:
-      file = open(hostfile, "r")
-      for line in file.readlines():
-        line = line.strip()
-        if line not in self.hosts and len(line) and "#" not in line:
-          self.hosts.append(line)
-      file.close()
+      with open(hostfile, "r") as file:
+        for line in file.readlines():
+          line = line.strip()
+          if line not in self.hosts and len(line) and "#" not in line:
+            self.hosts.append(line)
     except IOError as io_error:
       self.log.warn(f"Unable to open file {io_error}")
 
