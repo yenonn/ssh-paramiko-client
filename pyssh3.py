@@ -240,6 +240,10 @@ class RunCommand(cmd.Cmd):
     else:
       self.log.warn("No connection is made")
 
+  def do_inject(self, args):
+    command = args.strip()
+    self.do_run(f"sudo su -c \"{command}\" &>/dev/null &")
+  
   def do_sudorun(self, args):
     command = args.strip()
     self.do_run(f"sudo {command}")
