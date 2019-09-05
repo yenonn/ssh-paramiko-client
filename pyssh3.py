@@ -89,7 +89,7 @@ class RunCommand(cmd.Cmd):
       if add_item and add_item not in self.hosts:
         self.hosts.append(add_item)
       else:
-        self.log.warn(f"host is skipped: {add_time}")
+        self.log.warn(f"host is skipped: {add_item}")
     self.log.print(f"host is added: {self.hosts}")
 
   def do_rmhost(self, args):
