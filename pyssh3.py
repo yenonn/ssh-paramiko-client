@@ -245,7 +245,7 @@ class RunCommand(cmd.Cmd):
     self.do_run(f"sudo {command}")
 
   def do_diagnose(self, args):
-    command = f"journalctl -k -S {datetime.datetime.today().strftime('%Y-%m-%d')}"
+    command = "journalctl -k -S today"
     self.do_run(f"sudo {command}")
 
   def do_close(self, args):
