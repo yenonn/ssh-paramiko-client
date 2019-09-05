@@ -85,7 +85,7 @@ class RunCommand(cmd.Cmd):
     """ Add the host to the host list """
     add_item_hosts = args.split(",")
     for h in add_item_hosts:
-      add_item = args.strip()
+      add_item = h.strip()
       if add_item and add_item not in self.hosts:
         self.hosts.append(add_item)
       else:
